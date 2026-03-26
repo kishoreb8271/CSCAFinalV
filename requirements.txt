@@ -1,2 +1,4 @@
-google-generativeai
 streamlit
+google-generativeai
+pandas
+pillow
