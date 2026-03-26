@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "version": "2.0",
+    "frameworks": ["NIST 800-53", "PCI", "HIPAA"]
+  },
+  "controls": [
+    {
+      "id": "AC-1",
+      "component": "S3",
+      "control_name": "Public Access Block",
+      "question": "Is the 'Block Public Access' setting enabled at the bucket level?",
+      "scenarios": {
+        "risk_tiers": ["RT1", "RT2", "RT3", "RT4"],
+        "internet_facing": [true, false],
+        "data_types": ["PII", "PHI", "Claims", "Internal"]
+      },
+      "required_artifacts": "Screenshot of S3 Block Public Access settings",
+      "guidance": "Ensure no 0.0.0.0/0 policy exists."
+    },
+    {
+      "id": "SC-7",
+      "component": "EC2",
+      "control_name": "Boundary Protection",
+      "question": "Are security groups restricted to specific management IPs?",
+      "scenarios": {
+        "risk_tiers": ["RT1", "RT2"],
+        "internet_facing": [true],
+        "data_types": ["PHI", "PII"]
+      },
+      "required_artifacts": "Security Group Inbound Rules export",
+      "guidance": "High-risk tier + Internet facing requires strict IP whitelisting."
+    }
+  ]
+}
