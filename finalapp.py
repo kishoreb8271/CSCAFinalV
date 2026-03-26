@@ -1,17 +1,16 @@
 import streamlit as st
 import json
 import pandas as pd
-# FIX: Corrected import statements
-import google.generativeai as genai 
-from google.generativeai import types
+# FIX: Use the standard import path for the Google Generative AI SDK
+import google.generativeai as genai
 from PIL import Image
 
 # --- CONFIGURATION ---
-# SECURITY NOTE: It is highly recommended to use st.secrets instead of hardcoding
-# Go to Streamlit Cloud -> Settings -> Secrets and add: GOOGLE_API_KEY = "your_key"
-GENAI_API_KEY = st.secrets.get("GOOGLE_API_KEY", "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA")
+# SECURITY BEST PRACTICE: Use st.secrets for deployment.
+# If testing locally, it will fall back to your hardcoded key.
+GENAI_API_KEY = st.secrets.get("GENAI_API_KEY", "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA")
 
-# FIX: Corrected initialization for the modern SDK
+# FIX: Initialize the SDK using the configure method
 genai.configure(api_key=GENAI_API_KEY)
 
 def load_data():
@@ -38,11 +37,12 @@ def validate_artifact_with_ai(control_question, required_desc, uploaded_file):
             "confidence_score": 95
         }}
         """
-        # FIX: Corrected model generation syntax for google-generativeai
-        model = genai.GenerativeModel('gemini-1.5-flash') 
+        # FIX: Use GenerativeModel class for content generation
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
         response = model.generate_content(
             [prompt, img],
-            generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
+            generation_config={"response_mime_type": "application/json"}
         )
         return json.loads(response.text)
     except Exception as e:
@@ -70,7 +70,7 @@ def filter_controls(controls, tier, components, internet, d_types):
         if c['component'] in components:
             tier_match = tier in c['scenarios']['risk_tiers']
             internet_match = internet in c['scenarios']['internet_facing']
-            # Simple check if any selected data type is in the control requirements
+            # Only match data types if some are selected; otherwise default to True
             data_match = any(dt in c['scenarios']['data_types'] for dt in d_types) if d_types else True
             if tier_match and internet_match and data_match:
                 filtered.append(c)
@@ -103,7 +103,7 @@ if selected_components:
             if res == "NO":
                 st.error(f"⚠️ GAP IDENTIFIED: {ctrl['guidance']}")
 
-    # --- SUMMARY REPORT ---
+    # --- UPDATED SUMMARY REPORT ---
     if st.button("Generate Summary Review Report"):
         st.divider()
         st.header("📋 Summary Review Report")
