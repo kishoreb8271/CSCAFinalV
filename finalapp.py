@@ -8,7 +8,7 @@ from PIL import Image
 
 # --- CONFIGURATION ---
 # Using st.secrets is safer for deployment. Fallback to your key if secrets aren't set.
-GENAI_API_KEY = st.secrets.get("GENAI_API_KEY", "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA")
+GENAI_API_KEY = st.secrets.get("GENAI_API_KEY", "AIzaSyDqK5M2Jk_PcFEdnWL_eft3ozs3v8pHc7s")
 client = genai.Client(api_key=GENAI_API_KEY)
 
 def load_data():
