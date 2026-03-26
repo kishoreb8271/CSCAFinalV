@@ -1,13 +1,18 @@
 import streamlit as st
 import json
 import pandas as pd
-from google import genai
-from google.genai import types
+# FIX: Corrected import statements
+import google.generativeai as genai 
+from google.generativeai import types
 from PIL import Image
 
 # --- CONFIGURATION ---
-GENAI_API_KEY = "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA"
-client = genai.Client(api_key=GENAI_API_KEY)
+# SECURITY NOTE: It is highly recommended to use st.secrets instead of hardcoding
+# Go to Streamlit Cloud -> Settings -> Secrets and add: GOOGLE_API_KEY = "your_key"
+GENAI_API_KEY = st.secrets.get("GOOGLE_API_KEY", "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA")
+
+# FIX: Corrected initialization for the modern SDK
+genai.configure(api_key=GENAI_API_KEY)
 
 def load_data():
     try:
@@ -33,10 +38,11 @@ def validate_artifact_with_ai(control_question, required_desc, uploaded_file):
             "confidence_score": 95
         }}
         """
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[prompt, img],
-            config=types.GenerateContentConfig(response_mime_type="application/json")
+        # FIX: Corrected model generation syntax for google-generativeai
+        model = genai.GenerativeModel('gemini-1.5-flash') 
+        response = model.generate_content(
+            [prompt, img],
+            generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
         )
         return json.loads(response.text)
     except Exception as e:
@@ -64,14 +70,15 @@ def filter_controls(controls, tier, components, internet, d_types):
         if c['component'] in components:
             tier_match = tier in c['scenarios']['risk_tiers']
             internet_match = internet in c['scenarios']['internet_facing']
-            data_match = any(dt in c['scenarios']['data_types'] for dt in d_types)
+            # Simple check if any selected data type is in the control requirements
+            data_match = any(dt in c['scenarios']['data_types'] for dt in d_types) if d_types else True
             if tier_match and internet_match and data_match:
                 filtered.append(c)
     return filtered
 
 # --- MAIN INTERFACE ---
 if selected_components:
-    relevant_controls = filter_controls(data['controls'], risk_tier, selected_components, is_internet, data_types)
+    relevant_controls = filter_controls(data.get('controls', []), risk_tier, selected_components, is_internet, data_types)
     st.subheader(f"Applicable Controls for {', '.join(selected_components)}")
     
     responses = {}
@@ -96,7 +103,7 @@ if selected_components:
             if res == "NO":
                 st.error(f"⚠️ GAP IDENTIFIED: {ctrl['guidance']}")
 
-    # --- UPDATED SUMMARY REPORT ---
+    # --- SUMMARY REPORT ---
     if st.button("Generate Summary Review Report"):
         st.divider()
         st.header("📋 Summary Review Report")
@@ -105,7 +112,6 @@ if selected_components:
         for ctrl in relevant_controls:
             status = responses.get(ctrl['id'], "Not Answered")
             
-            # Logic for Advisory and Remediation
             if status == "NO":
                 advisory = f"CRITICAL GAP: {ctrl['control_name']} is currently non-compliant.\nThis violates {ctrl['component']} security baselines for {risk_tier}."
                 remediation = f"1. Review {ctrl['component']} configuration.\n2. Implement: {ctrl['guidance']}"
@@ -121,7 +127,6 @@ if selected_components:
                 "Remediation Steps": remediation
             })
         
-        # Display as a clean table
         df = pd.DataFrame(report_data)
         st.table(df)
 else:
