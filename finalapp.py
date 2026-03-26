@@ -1,17 +1,15 @@
 import streamlit as st
 import json
 import pandas as pd
-# FIX: Use the standard import path for the Google Generative AI SDK
-import google.generativeai as genai
+# Use the specific modern SDK structure you have in your working local code
+from google import genai
+from google.genai import types
 from PIL import Image
 
 # --- CONFIGURATION ---
-# SECURITY BEST PRACTICE: Use st.secrets for deployment.
-# If testing locally, it will fall back to your hardcoded key.
+# Using st.secrets is safer for deployment. Fallback to your key if secrets aren't set.
 GENAI_API_KEY = st.secrets.get("GENAI_API_KEY", "AIzaSyCH8GdET2HGA73sMnCafY8DKmGvh0pvUcA")
-
-# FIX: Initialize the SDK using the configure method
-genai.configure(api_key=GENAI_API_KEY)
+client = genai.Client(api_key=GENAI_API_KEY)
 
 def load_data():
     try:
@@ -37,12 +35,11 @@ def validate_artifact_with_ai(control_question, required_desc, uploaded_file):
             "confidence_score": 95
         }}
         """
-        # FIX: Use GenerativeModel class for content generation
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        
-        response = model.generate_content(
-            [prompt, img],
-            generation_config={"response_mime_type": "application/json"}
+        # Maintaining your specific model version: gemini-2.5-flash
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[prompt, img],
+            config=types.GenerateContentConfig(response_mime_type="application/json")
         )
         return json.loads(response.text)
     except Exception as e:
@@ -103,7 +100,7 @@ if selected_components:
             if res == "NO":
                 st.error(f"⚠️ GAP IDENTIFIED: {ctrl['guidance']}")
 
-    # --- UPDATED SUMMARY REPORT ---
+    # --- SUMMARY REPORT ---
     if st.button("Generate Summary Review Report"):
         st.divider()
         st.header("📋 Summary Review Report")
